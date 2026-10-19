@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Peak Fresh | Fresh Smoothies</title>
+
+    <meta
+        name="description"
+        content="Peak Fresh offers fresh banana, watermelon and milk smoothies. Order your smoothie for pickup."
+    >
+
+    <meta
+        name="theme-color"
+        content="#17251d"
+    >
+
+    <link rel="icon" type="image/svg+xml" href="src/assets/brand/favicon.svg">
+    <link
+        rel="stylesheet"
+        href="src/css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- =========================================
+         HEADER
+         ========================================= -->
+
+    <header>
+
+        <nav aria-label="Main navigation">
+
+            <a href="index.html" class="logo" aria-label="Peak Fresh home"><picture><source media="(max-width: 520px)" srcset="src/assets/brand/peak-fresh-logo-compact.svg"><img src="src/assets/brand/peak-fresh-logo.svg" width="170" height="38" alt=""></picture></a>
+
+
+            <div class="nav-links">
+
+                <a href="#menu">
+                    Menu
+                </a>
+
+                <a href="#how-it-works">
+                    How it works
+                </a>
+
+                <a href="#pickup">
+                    Pickup
+                </a>
+                <a href="#community">
+                    Community
+                </a>
+                <a href="pages/about.html">About</a>
+
+            </div>
+
+        </nav>
+
+    </header>
+
+
+
+    <main>
+
+        <!-- =========================================
+             HERO
+             ========================================= -->
+
+        <section class="hero">
+
+            <div class="hero-content">
+
+                <p class="eyebrow">FRESH • SIMPLE • LOCAL</p>
+
+
+                <h1>
+                    Freshness in every sip.
+                </h1>
+
+
+                <p>Fresh banana + watermelon + milk, blended simply and prepared for pickup at Peak Fresh.</p>
+
+
+                <a
+                    href="#menu"
+                    class="btn"
+                >
+                    Order your smoothie
+                </a>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             MENU
+             ========================================= -->
+
+        <section
+            id="menu"
+            class="menu-section"
+        >
+
+            <div class="section-heading">
+
+                <p class="eyebrow">
+                    OUR MENU
+                </p>
+
+
+                <h2>
+                    Choose your size
+                </h2>
+
+
+                <p>
+                    Freshly prepared smoothies at
+                    student-friendly prices.
+                </p>
+
+            </div>
+
+
+
+            <div id="productList" class="product-list" aria-live="polite">
+                <p class="catalog-message" role="status">Loading the current menu…</p>
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             HOW IT WORKS
+             ========================================= -->
+
+        <section id="storeNotice" class="store-notice" aria-live="polite" hidden>
+            <p id="storeAnnouncement" hidden></p>
+            <p id="storeClosedMessage" hidden></p>
+        </section>
+
+        <section
+            id="how-it-works"
+            class="info-section"
+        >
+
+            <div class="section-heading">
+
+                <p class="eyebrow">
+                    HOW IT WORKS
+                </p>
+
+
+                <h2>
+                    Simple ordering
+                </h2>
+
+            </div>
+
+
+
+            <div class="steps">
+
+
+                <!-- STEP 01 -->
+
+                <div class="step">
+
+                    <span>
+                        01
+                    </span>
+
+                    <h3>
+                        Choose
+                    </h3>
+
+                    <p>
+                        Select your smoothie and size.
+                    </p>
+
+                </div>
+
+
+
+                <!-- STEP 02 -->
+
+                <div class="step">
+
+                    <span>
+                        02
+                    </span>
+
+                    <h3>
+                        Order
+                    </h3>
+
+                    <p>
+                        Choose an available pickup slot.
+                    </p>
+
+                </div>
+
+
+
+                <!-- STEP 03 -->
+
+                <div class="step">
+
+                    <span>
+                        03
+                    </span>
+
+                    <h3>
+                        Pay
+                    </h3>
+
+                    <p>
+                        Pay through Pochi and wait
+                        for confirmation.
+                    </p>
+
+                </div>
+
+
+
+                <!-- STEP 04 -->
+
+                <div class="step">
+
+                    <span>
+                        04
+                    </span>
+
+                    <h3>
+                        Pickup
+                    </h3>
+
+                    <p>
+                        Collect your fresh smoothie
+                        at Peak Fresh.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+        <section id="community" class="community-section" aria-labelledby="communityTitle">
+            <div class="section-heading">
+                <p class="eyebrow">PEAK FRESH COMMUNITY</p>
+                <h2 id="communityTitle">Fresh thoughts</h2>
+                <p>See what customers are sharing and add your own note.</p>
+            </div>
+            <p id="communityAuthPrompt" class="community-auth-prompt">Sign in to post, like, or reply.</p>
+            <form id="feedbackForm" class="feedback-form" hidden>
+                <label for="feedbackContent">Your feedback</label>
+                <textarea id="feedbackContent" name="content" rows="4" minlength="1" maxlength="2000" required></textarea>
+                <button class="btn" type="submit">Share feedback</button>
+            </form>
+            <p id="feedbackMessage" class="community-message" role="status" aria-live="polite"></p>
+            <div id="feedbackList" class="feedback-list" aria-live="polite">
+                <p role="status">Loading community feedback…</p>
+            </div>
+        </section>
+
+
+
+        <!-- =========================================
+             PICKUP
+             ========================================= -->
+
+        <section
+            id="pickup"
+            class="pickup-section"
+        >
+
+            <div class="section-heading">
+
+                <p class="eyebrow">
+                    COLLECTION POINT
+                </p>
+
+
+                <h2>
+                    Pickup your order
+                </h2>
+
+
+                <p>
+                    Your smoothie will be prepared
+                    for the pickup time you select.
+                </p>
+
+            </div>
+
+
+
+            <div class="pickup-card">
+
+                <h3>
+                    Peak Fresh Collection Point
+                </h3>
+
+
+                <p>
+                    Fresh Drop Milk collection point
+                </p>
+
+
+                <a
+                    href="https://www.google.com/maps?q=-0.5087698,36.8917955"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="map-link"
+                >
+                    Open location in Google Maps
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================================
+         FOOTER
+         ========================================= -->
+
+    <footer id="contact"><p>© 2026 Peak Fresh. Freshness in every sip.</p><nav class="footer-links" aria-label="Footer navigation"><a href="pages/about.html">About us</a><a href="pages/about.html#contact-details">Contact</a><a href="pages/terms.html">Terms &amp; Conditions</a><a href="pages/privacy.html">Privacy Policy</a><a href="#cookie-settings" data-open-cookie-settings>Cookie settings</a></nav><p class="footer-contact">Call <a href="tel:0117543603">0117543603</a> or message us on <a href="https://wa.me/254117543603" target="_blank" rel="noopener noreferrer">WhatsApp</a>.</p></footer>
+
+
+
+    <!-- =========================================
+         JAVASCRIPT DISABLED MESSAGE
+         ========================================= -->
+
+    <noscript>
+
+        <div
+            style="
+                padding: 15px;
+                background: #17251d;
+                color: white;
+                text-align: center;
+            "
+        >
+
+            JavaScript is required to place an
+            online order. Please enable JavaScript
+            and refresh the page.
+
+        </div>
+
+    </noscript>
+
+
+
+    <!-- =========================================
+         PEAK FRESH JAVASCRIPT
+         ========================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="src/js/supabase.js"></script>
+<script src="src/js/auth.js" defer></script>
+<script src="src/js/app.js" defer></script>
+<script src="src/js/consent.js" defer></script>
+<script src="src/js/community.js" defer></script>
+
+
+</body>
+
+</html>

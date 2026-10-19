@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Peak Fresh smoothie mark</title>
+  <rect width="64" height="64" rx="16" fill="#174b35"/>
+  <path d="M13 17h38l-4 39c-9 5-21 5-30 0z" fill="#fffdf8" stroke="#fffdf8" stroke-linejoin="round" stroke-width="2"/>
+  <path d="M17 36c7-6 11-3 17-9 5 5 10 5 14 0l-2 25c-8 4-17 4-26 0z" fill="#dcebb0"/>
+  <path d="M31 28c-1-9 5-16 15-19-1 10-6 16-15 19Z" fill="#75a64c"/>
+  <path d="M32 27c4-5 8-8 12-10" fill="none" stroke="#174b35" stroke-linecap="round" stroke-width="2.5"/>
+  <path d="M19 11h29v5H19z" fill="#fffdf8"/>
+</svg>

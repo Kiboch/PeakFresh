@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" role="img" aria-labelledby="title desc">
+  <title id="title">Peak Fresh</title><desc id="desc">Peak Fresh smoothie cup and wordmark.</desc>
+  <g transform="translate(3 2)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 11h34l-4 33c-8 4-18 4-26 0z" fill="#174b35"/>
+    <path d="M9 26c6-5 10-3 15-8 5 5 9 4 12 0l-2 21c-7 3-15 3-22 0z" fill="#dcebb0"/>
+    <path d="M22 20c-1-7 4-13 12-16-1 8-5 14-12 16Z" fill="#75a64c"/>
+    <path d="M23 19c3-4 6-7 9-9" fill="none" stroke="#fffdf8" stroke-width="2"/>
+    <path d="M10 7h23v4H10z" fill="#174b35"/>
+  </g>
+  <text x="49" y="31" fill="#174b35" font-family="Aptos, Segoe UI, Arial, sans-serif" font-size="21" font-weight="750" letter-spacing="-.6">Peak Fresh</text>
+</svg>
