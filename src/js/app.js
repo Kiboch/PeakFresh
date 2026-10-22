@@ -664,6 +664,26 @@ document.addEventListener("DOMContentLoaded", () => {
                ----------------------------- */
 
             if (pickupSection.hidden) {
+                const locationPoint = window.peakFreshOrderLocation;
+                if (!locationPoint || typeof window.peakFreshCheckOrderLocation !== "function") {
+                    orderMessage.textContent = "Use your current location to check whether ordering is available in your area.";
+                    orderMessage.classList.add("error");
+                    releaseSubmissionLock("Continue");
+                    return;
+                }
+                const regionCheck = await window.peakFreshCheckOrderLocation();
+                if (regionCheck.error) {
+                    orderMessage.textContent = "Your location could not be checked. Please retry.";
+                    orderMessage.classList.add("error");
+                    releaseSubmissionLock("Continue");
+                    return;
+                }
+                if (!regionCheck.allowed) {
+                    orderMessage.textContent = "Not yet available in your region.";
+                    orderMessage.classList.add("error");
+                    releaseSubmissionLock("Continue");
+                    return;
+                }
 
                 confirmButton.disabled = true;
                 confirmButton.textContent = "Loading...";
@@ -964,8 +984,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         p_quantity:
                             quantity,
 
-                        p_pickup_slot_id:
-                            selectedPickupSlot
+                        p_pickup_slot_id: selectedPickupSlot, 
+                        p_location_lat: window.peakFreshOrderLocation?.lat, 
+                        p_location_lng: window.peakFreshOrderLocation?.lng
                     }
                 );
 
@@ -982,8 +1003,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     Array.isArray(orderResult)
                         ? orderResult[0]
                         : orderResult;
-
-
                 if (!order) {
                     throw new Error(
                         "The order was created but no order information was returned."
@@ -1189,6 +1208,10 @@ reportPaymentButton.addEventListener("click", async () => {
                 );
 
                 let message = error.message && error.message.includes("Your sign-in changed") ? error.message : "We could not place your order. Please try again.";
+
+                if (error.message && error.message.includes("Not yet available in your region")) {
+                    message = "Not yet available in your region.";
+                }
 
                 /* Friendly database errors */
 

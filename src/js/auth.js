@@ -90,6 +90,38 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function authErrorMessage(error, action) {
+        const code = String(error?.code || "").toLowerCase();
+        const detail = String(error?.message || "").toLowerCase();
+        const status = Number(error?.status || error?.statusCode || 0);
+        if (code === "invalid_email" || detail.includes("email address") && detail.includes("invalid")) {
+            return "Enter a valid email address and try again.";
+        }
+        if (code === "weak_password" || detail.includes("password") && (detail.includes("weak") || detail.includes("least"))) {
+            return "Choose a stronger password that meets the password requirements.";
+        }
+        if (code === "email_not_confirmed" || detail.includes("email not confirmed")) {
+            return "Confirm your email using the link we sent, then sign in.";
+        }
+        if (status === 429 || code.includes("rate_limit") || detail.includes("rate limit")) {
+            return "Too many attempts were made. Wait a few minutes and try again.";
+        }
+        if (error?.name === "TypeError" || detail.includes("fetch") || detail.includes("network")) {
+            return "We could not reach the account service. Check your connection and try again.";
+        }
+        if (action === "signup" && status >= 500) {
+            return "Supabase could not complete registration. Please try again later; the site owner should check Supabase Auth logs and email delivery settings.";
+        }
+        if (action === "login" && (code === "invalid_credentials" || status === 400)) {
+            return "Email or password is incorrect. Check your details or use Forgot password.";
+        }
+        return action === "signup"
+            ? "We could not create your account. Check your details and try again."
+            : action === "login"
+                ? "We could not sign you in. Check your details and try again."
+                : "We could not complete that request. Please try again.";
+    }
+
     function setupProfileEditor() {
         const form = content.querySelector("#profileForm");
         const fileInput = form.elements.avatar;
@@ -301,51 +333,179 @@ document.addEventListener("DOMContentLoaded", () => {
         const panel = content.querySelector(".account-orders");
         const list = panel?.querySelector(".account-order-list");
         const status = panel?.querySelector(".account-orders-status");
-        if (!panel || !list || !status || !currentSession?.user?.id) return;
-        status.textContent = "Loading your orders…";
+        const refresh = panel?.querySelector(".account-orders-refresh");
+        if (!panel || !list || !status || !currentSession?.user?.id || status.getAttribute("aria-busy") === "true") return;
+        status.setAttribute("aria-busy", "true");
+        status.textContent = "Loading your orders...";
         list.replaceChildren();
+        if (refresh) refresh.hidden = true;
         try {
             const { data: result, error } = await supabaseClient.functions.invoke("peak-fresh-operations", {
                 body: { action: "account_order_history" }
             });
             if (error) throw error;
-            const orders = Array.isArray(result?.orders) ? result.orders : [];
-            if (!orders.length) { status.textContent = "Your order history will appear here after your first order."; return; }
+            if (!Array.isArray(result?.orders)) throw new Error("The order history response was invalid.");
+            const orders = result.orders;
+            if (!orders.length) {
+                status.textContent = "Your order history will appear here after your first order.";
+                return;
+            }
             status.textContent = orders.length === 25 ? "Your latest 25 orders" : orders.length + (orders.length === 1 ? " order" : " orders");
+            const currency = new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            const stages = [
+                ["Order received", ["PENDING", "PAYMENT_PENDING"]],
+                ["Confirmed", ["PAID"]],
+                ["Preparing", ["PREPARING"]],
+                ["Ready for pickup", ["READY"]],
+                ["Completed", ["COLLECTED"]]
+            ];
             orders.forEach(order => {
                 const card = document.createElement("article"); card.className = "account-order-card";
                 const head = document.createElement("div"); head.className = "account-order-head";
                 const number = document.createElement("strong"); number.textContent = "PF-" + String(order.order_number).padStart(4, "0");
-                const badge = document.createElement("span"); badge.className = "account-order-status status-" + String(order.status || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-                badge.textContent = String(order.status || "UNKNOWN").replaceAll("_", " "); head.append(number, badge);
+                const rawStatus = String(order.status || "UNKNOWN").toUpperCase();
+                const badge = document.createElement("span"); badge.className = "account-order-status status-" + rawStatus.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                badge.textContent = rawStatus.replaceAll("_", " "); head.append(number, badge);
+                const slot = Array.isArray(order.pickup_slot) ? order.pickup_slot[0] : order.pickup_slot;
+                const date = order.pickup_date ?? slot?.pickup_date;
+                const start = order.start_time ?? slot?.start_time;
+                const end = order.end_time ?? slot?.end_time;
                 const details = document.createElement("p");
-                details.textContent = (order.pickup_date ? new Date(order.pickup_date + "T12:00:00") : new Date(order.created_at)).toLocaleDateString() +
-                    (order.start_time ? " · " + String(order.start_time).slice(0, 5) + (order.end_time ? "–" + String(order.end_time).slice(0, 5) : "") : "");
+                const validDate = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date);
+                const dateText = validDate ? new Date(date + "T12:00:00").toLocaleDateString("en-KE") : "Pickup date unavailable";
+                const timeText = typeof start === "string" ? " · " + start.slice(0, 5) + (typeof end === "string" ? "–" + end.slice(0, 5) : "") : "";
+                details.textContent = dateText + timeText;
+                const payment = document.createElement("p"); payment.className = "account-order-payment";
+                payment.textContent = "Payment: " + (typeof order.payment_status === "string" ? order.payment_status.replaceAll("_", " ") : "Status unavailable");
                 const items = document.createElement("ul");
-                (order.order_items || []).forEach(item => {
-                    const entry = document.createElement("li"), size = Array.isArray(item.product_sizes) ? item.product_sizes[0] : item.product_sizes;
+                (Array.isArray(order.order_items) ? order.order_items : []).forEach(item => {
+                    const size = Array.isArray(item.product_sizes) ? item.product_sizes[0] : item.product_sizes;
                     const product = Array.isArray(size?.products) ? size.products[0] : size?.products;
-                    entry.textContent = item.quantity + " × " + (product?.name || "Smoothie") + (size?.size_ml ? " · " + size.size_ml + " ml" : "");
+                    const entry = document.createElement("li");
+                    entry.textContent = String(item.quantity ?? "—") + " × " + (product?.name || "Product details unavailable") +
+                        (Number.isFinite(Number(size?.size_ml)) && Number(size.size_ml) > 0 ? " · " + size.size_ml + " ml" : "");
                     items.appendChild(entry);
                 });
-                const total = document.createElement("strong"); total.className = "account-order-total"; total.textContent = "KSh " + Number(order.total_amount || 0).toFixed(2);
-                card.append(head, details, items, total); list.appendChild(card);
+                const total = document.createElement("strong"); total.className = "account-order-total";
+                const amount = Number(order.total_amount);
+                total.textContent = Number.isFinite(amount) ? currency.format(amount) : "Total unavailable";
+                card.append(head, details, payment, items, total);
+                if (rawStatus === "CANCELLED") {
+                    const cancelled = document.createElement("p"); cancelled.className = "account-order-cancelled"; cancelled.textContent = "This order was cancelled.";
+                    card.appendChild(cancelled);
+                } else {
+                    const currentStage = stages.findIndex(stage => stage[1].includes(rawStatus));
+                    const progress = document.createElement("ol"); progress.className = "account-order-progress"; progress.setAttribute("aria-label", "Order progress");
+                    stages.forEach((stage, index) => {
+                        const item = document.createElement("li");
+                        if (currentStage >= 0 && index <= currentStage) item.classList.add("is-complete");
+                        if (index === currentStage) item.setAttribute("aria-current", "step");
+                        item.textContent = stage[0]; progress.appendChild(item);
+                    });
+                    card.appendChild(progress);
+                }
+                if (rawStatus === "COLLECTED" || rawStatus === "CANCELLED") {
+                    const actions = document.createElement("div"); actions.className = "account-order-actions";
+                    const removeButton = document.createElement("button");
+                    removeButton.type = "button"; removeButton.className = "account-order-remove";
+                    removeButton.textContent = "Remove from history"; removeButton.setAttribute("aria-expanded", "false");
+                    const confirmation = document.createElement("div"); confirmation.className = "account-order-confirmation"; confirmation.hidden = true;
+                    const prompt = document.createElement("p");
+                    prompt.textContent = "Remove this order from your account history? The order record stays with Peak Fresh.";
+                    const errorText = document.createElement("p"); errorText.className = "account-order-remove-error"; errorText.setAttribute("role", "alert"); errorText.hidden = true;
+                    const confirmButton = document.createElement("button"); confirmButton.type = "button";
+                    confirmButton.className = "account-order-confirm"; confirmButton.textContent = "Remove order";
+                    const keepButton = document.createElement("button"); keepButton.type = "button";
+                    keepButton.className = "account-order-keep"; keepButton.textContent = "Keep order";
+                    confirmation.append(prompt, errorText, confirmButton, keepButton);
+                    removeButton.addEventListener("click", () => {
+                        confirmation.hidden = false;
+                        removeButton.setAttribute("aria-expanded", "true");
+                        keepButton.focus();
+                    });
+                    keepButton.addEventListener("click", () => {
+                        confirmation.hidden = true;
+                        removeButton.setAttribute("aria-expanded", "false");
+                        removeButton.focus();
+                    });
+                    confirmButton.addEventListener("click", async () => {
+                        confirmButton.disabled = true; keepButton.disabled = true; removeButton.disabled = true;
+                        confirmButton.textContent = "Removing...";
+                        errorText.hidden = true;
+                        try {
+                            const { error } = await supabaseClient.functions.invoke("peak-fresh-operations", {
+                                body: { action: "account_hide_order", order_id: order.id }
+                            });
+                            if (error) throw error;
+                            card.remove();
+                            const remaining = list.children.length;
+                            status.textContent = remaining
+                                ? remaining + (remaining === 1 ? " order shown in your history." : " orders shown in your history.")
+                                : "You have no orders showing in your account history.";
+                        } catch (error) {
+                            console.error("Peak Fresh order history removal failed.", { code: error?.code || error?.context?.status || "unavailable" });
+                            errorText.textContent = "We could not remove this order just now. Please try again.";
+                            errorText.hidden = false;
+                            confirmButton.textContent = "Remove order";
+                            confirmButton.disabled = false; keepButton.disabled = false; removeButton.disabled = false;
+                        }
+                    });
+                    actions.append(removeButton, confirmation);
+                    card.appendChild(actions);
+                }
+                list.appendChild(card);
             });
         } catch (error) {
-            console.error("Peak Fresh order history could not be loaded:", error?.message || "unknown error");
-            status.textContent = "Order history is temporarily unavailable. Please try again later.";
+            const code = error?.code || error?.context?.status || "unavailable";
+            console.error("Peak Fresh order history request failed.", { code });
+            status.textContent = "Order history is temporarily unavailable. Please try again.";
+            if (refresh) refresh.hidden = false;
+        } finally {
+            status.setAttribute("aria-busy", "false");
         }
-    }
-    function render(nextMode, notice = "") {
+    }    function render(nextMode, notice = "") {
         mode = nextMode;
+        content.closest(".auth-box")?.classList.toggle("account-modal-layout", nextMode === "account");
         if (nextMode === "account") {
-            content.innerHTML = '<h2 id="auth-title">Your account</h2><p>Your signed-in Peak Fresh account.</p><section class="account-orders" aria-labelledby="accountOrdersTitle"><h3 id="accountOrdersTitle">Your orders</h3><p class="account-orders-status" role="status" aria-live="polite">Loading your orders…</p><div class="account-order-list"></div></section><div class="profile-editor"><img class="profile-avatar-preview" alt="Profile photo preview" hidden><div class="profile-avatar-placeholder">Your profile photo</div><form id="profileForm"><label for="profileDisplayName">Display name</label><input id="profileDisplayName" name="display_name" maxlength="80" required><label for="profileAvatarFile">Profile photo</label><input id="profileAvatarFile" name="avatar" type="file" accept="image/webp,image/jpeg,image/png"><p class="profile-help">The image is center-cropped to a square and compressed before upload.</p><button type="submit" class="btn profile-save">Save profile</button></form></div><dl class="account-details"><div class="name-row"><dt>Name</dt><dd class="account-name"></dd></div><div><dt>Email</dt><dd class="account-email"></dd></div></dl><p class="auth-message" role="status" aria-live="polite"></p><button type="button" class="btn auth-submit sign-out-button">Sign out</button><button type="button" class="auth-link delete-account-button">Delete account</button>';
+            content.innerHTML = '<div class="account-layout"><header class="account-page-heading"><p class="account-orders-eyebrow">PEAK FRESH ACCOUNT</p><h2 id="auth-title">Welcome to your account</h2><p>Track your orders and manage your personal settings.</p></header><div class="account-tabs" role="tablist" aria-label="Account sections"><button type="button" id="accountOrdersTab" class="account-tab" role="tab" aria-selected="true" aria-controls="accountOrdersPanel">Orders</button><button type="button" id="accountSettingsTab" class="account-tab" role="tab" aria-selected="false" aria-controls="accountSettingsPanel" tabindex="-1">Account settings</button></div><section id="accountOrdersPanel" class="account-tab-panel" role="tabpanel" aria-labelledby="accountOrdersTab" tabindex="0"><section class="account-orders" aria-labelledby="accountOrdersTitle"><div class="account-orders-heading"><div><p class="account-orders-eyebrow">ORDER HISTORY</p><h3 id="accountOrdersTitle">Your orders</h3><p class="account-orders-intro">Follow each order and revisit your recent purchases.</p></div><button type="button" class="auth-link account-orders-refresh" hidden>Refresh orders</button></div><p class="account-orders-status" role="status" aria-live="polite">Loading your orders</p><div class="account-order-list"></div></section></section><section id="accountSettingsPanel" class="account-tab-panel account-settings-panel" role="tabpanel" aria-labelledby="accountSettingsTab" tabindex="0" hidden><div class="account-settings-workspace"><nav class="account-settings-nav" aria-label="Account settings"><p class="account-settings-nav-title">SETTINGS</p><button type="button" class="account-settings-link" aria-current="true" data-settings-target="settingsBasicInfo">Account</button><button type="button" class="account-settings-link" aria-current="false" data-settings-target="settingsContactInfo">Contact details</button><button type="button" class="account-settings-link" aria-current="false" data-settings-target="settingsPrivacy">Privacy &amp; data</button></nav><div class="account-settings-content"><section id="settingsBasicInfo" class="account-settings-shelf" tabindex="-1"><div class="account-shelf-heading"><div><p class="account-orders-eyebrow">YOUR PROFILE</p><h3>Basic information</h3><p>Manage the name and photo shown on your Peak Fresh account.</p></div></div><div class="profile-editor"><img class="profile-avatar-preview" alt="Profile photo preview" hidden><div class="profile-avatar-placeholder">Your profile photo</div><form id="profileForm"><label for="profileDisplayName">Display name</label><input id="profileDisplayName" name="display_name" maxlength="80" required><label for="profileAvatarFile">Profile picture</label><input id="profileAvatarFile" name="avatar" type="file" accept="image/webp,image/jpeg,image/png"><p class="profile-help">Square-cropped and compressed before upload.</p><button type="submit" class="btn profile-save">Save changes</button></form></div></section><section id="settingsContactInfo" class="account-settings-shelf" tabindex="-1"><div class="account-shelf-heading"><div><p class="account-orders-eyebrow">ACCOUNT INFORMATION</p><h3>Contact details</h3><p>These details are connected to your Peak Fresh account.</p></div></div><dl class="account-details"><div class="name-row"><dt>Name</dt><dd class="account-name"></dd></div><div><dt>Email address</dt><dd class="account-email"></dd></div></dl></section><section id="settingsPrivacy" class="account-danger-shelf" tabindex="-1"><div><p class="account-orders-eyebrow">PRIVACY &amp; DATA</p><h3>Delete account</h3><p>Account deletion is permanent. Completed orders may be retained for store records.</p></div><button type="button" class="auth-link delete-account-button">Delete account</button></section></div></div></section><footer class="account-footer"><p class="auth-message" role="status" aria-live="polite"></p><button type="button" class="btn auth-submit sign-out-button">Sign out</button></footer></div>';
+            const accountTabs = Array.from(content.querySelectorAll(".account-tab"));
+            const activateAccountTab = (tab, moveFocus = false) => {
+                accountTabs.forEach(item => {
+                    const active = item === tab;
+                    item.setAttribute("aria-selected", String(active));
+                    item.tabIndex = active ? 0 : -1;
+                    content.querySelector("#" + item.getAttribute("aria-controls")).hidden = !active;
+                });
+                if (moveFocus) tab.focus();
+            };
+            accountTabs.forEach((tab, index) => {
+                tab.addEventListener("click", () => activateAccountTab(tab));
+                tab.addEventListener("keydown", event => {
+                    let next = index;
+                    if (event.key === "ArrowRight") next = (index + 1) % accountTabs.length;
+                    else if (event.key === "ArrowLeft") next = (index + accountTabs.length - 1) % accountTabs.length;
+                    else if (event.key === "Home") next = 0;
+                    else if (event.key === "End") next = accountTabs.length - 1;
+                    else return;
+                    event.preventDefault();
+                    activateAccountTab(accountTabs[next], true);
+                });
+            });
+            const settingsLinks = Array.from(content.querySelectorAll(".account-settings-link"));
+            settingsLinks.forEach(link => link.addEventListener("click", () => {
+                settingsLinks.forEach(item => item.setAttribute("aria-current", String(item === link)));
+                content.querySelector("#" + link.dataset.settingsTarget)?.scrollIntoView({
+                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                    block: "nearest"
+                });
+            }));
             const name = String(profileName || currentSession?.user?.user_metadata?.display_name || "").trim();
             content.querySelector(".name-row").hidden = !name;
             content.querySelector(".account-name").textContent = name;
             content.querySelector(".account-email").textContent = currentSession?.user?.email || "Email unavailable";
             content.querySelector(".sign-out-button").addEventListener("click", signOut);
             setupProfileEditor();
+            content.querySelector(".account-orders-refresh").addEventListener("click", loadAccountOrders);
             void loadAccountOrders();
             requestAnimationFrame(() => content.querySelector(".sign-out-button")?.focus());
             return;
@@ -525,7 +685,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     setAccount(result.data.session);
                     close();
                 } else {
-                    render("login", "If that email can register, Supabase will send a confirmation link.");
+                    render("login", "If registration succeeds, check your inbox and spam folder for a confirmation link before signing in.");
                 }
             } else if (submittedMode === "forgot") {
                 message("If an account exists for that email, a reset link will be sent.", "success");
@@ -533,8 +693,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 render("login", "Password updated. Please sign in.");
             }
         } catch (error) {
-            console.error("Peak Fresh authentication error:", error?.message || "unknown error");
-            message("We could not complete that request. Please check your details and try again.", "error");
+            console.warn("Peak Fresh authentication request failed:", {
+                action: submittedMode,
+                status: Number(error?.status || error?.statusCode || 0) || undefined,
+                code: String(error?.code || "") || undefined,
+                name: String(error?.name || "Error")
+            });
+            message(authErrorMessage(error, submittedMode), "error");
         } finally {
             pending = false;
             const active = content.querySelector("#auth-form [type=submit]");
