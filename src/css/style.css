@@ -1637,13 +1637,3 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-heading); }
 @media(max-width:680px) {
  .auth-box nav.account-settings-nav { position:static; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:stretch; justify-content:stretch; padding:7px; }
 }
-/* Location confirmation in the order sheet. */
-.order-location-panel{margin:18px 0;padding:16px;border:1px solid #dce7df;border-radius:16px;background:#f7faf7}
-.order-location-panel h3{margin:0 0 6px;color:#193b2c;font-size:1rem}
-.order-location-panel>p{margin:0 0 12px;color:#64736a;font-size:.9rem;line-height:1.5}
-.order-location-button{min-height:44px;padding:10px 15px;border:0;border-radius:10px;background:#205b40;color:#fff;font:inherit;font-weight:700;cursor:pointer}
-.order-location-button:disabled{opacity:.65;cursor:wait}
-.order-location-map{height:210px;margin-top:12px;border:1px solid #d8e2db;border-radius:12px;overflow:hidden;background:#e9efea}
-.order-location-status{margin:10px 0 0!important;font-size:.88rem!important}
-.order-location-status.is-error{color:#a43e32!important}
-.order-location-status.is-success{color:#28613f!important}

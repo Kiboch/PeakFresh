@@ -257,18 +257,3 @@ body:has(.admin-page) { background:#f4f6f1; }
 .admin-toast button:focus-visible{outline:2px solid #b9d9a5;outline-offset:2px}
 @media(max-width:520px){.admin-toast{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:calc(100vw - 24px)}}
 @media(prefers-reduced-motion:reduce){.admin-toast{transition:none;transform:none}.admin-toast.is-visible{transform:none}}
-/* Admin order-region editor. */
-.service-area-settings{margin-top:24px;padding-top:24px;border-top:1px solid #e4ebe5}
-.service-area-gate{margin:18px 0 6px}
-.service-area-note,.service-area-map-hint{color:#738179;font-size:.88rem;line-height:1.5}
-.service-area-form{margin-top:16px}
-.service-area-map{height:360px;min-height:280px;border:1px solid #dce5dd;border-radius:14px;overflow:hidden;background:#edf2ed}
-.service-area-list{margin-top:18px}
-.service-area-item{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.service-area-item>div:first-child{display:grid;gap:5px;min-width:0}
-.service-area-item>div:first-child span{color:#78857e;font-size:.88rem}
-.service-area-actions{display:flex;flex-wrap:wrap;gap:8px}
-.service-area-delete{color:#9e4438}
-#serviceAreaMessage[data-kind="error"]{color:#a43e32}
-#serviceAreaMessage[data-kind="success"]{color:#28613f}
-@media(max-width:620px){.service-area-map{height:300px}.service-area-item{align-items:flex-start;flex-direction:column}.service-area-actions{width:100%}.service-area-actions button{flex:1 1 auto}}
